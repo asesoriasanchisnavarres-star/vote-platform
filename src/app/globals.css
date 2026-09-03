@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Apple-style Light Mode Colors */
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --text-primary: #1d1d1f;
+  --text-secondary: #86868b;
+  
+  /* Corporate Brand Color */
+  --brand-navy: #202e56;
+  --brand-navy-hover: #2a3c70;
+  --brand-accent: #3b82f6;
+
+  /* Glassmorphism helpers */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Apple-style Dark Mode Colors */
+    --bg-primary: #000000;
+    --bg-secondary: #1c1c1e;
+    --text-primary: #f5f5f7;
+    --text-secondary: #86868b;
+    
+    --brand-navy: #3a508f; /* Lighter navy for dark mode visibility */
+    --brand-navy-hover: #4b66b3;
+    
+    --glass-bg: rgba(28, 28, 30, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  }
+}
+
+body {
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  font-family: var(--font-work-sans), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Base Animations & Utilities */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 20px;
+  }
+
+  .btn-primary {
+    @apply transition-all duration-300 ease-in-out px-6 py-3 rounded-full font-medium text-white shadow-sm hover:shadow-md active:scale-95;
+    background-color: var(--brand-navy);
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--brand-navy-hover);
+  }
+}

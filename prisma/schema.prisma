@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+// -----------------------------------------------------
+// 1. Censo de Empleados (Opciones a Votar)
+// -----------------------------------------------------
+model Empleado_Candidato {
+  id             String  @id @default(cuid())
+  nombreCompleto String
+  departamento   String?
+  activo         Boolean @default(true) // Si se despide a alguien, se marca falso para que no salga en la lista
+
+  respuestasRecibidas Respuesta_Anonima[] // Relación con los votos obtenidos
+}
+
+// -----------------------------------------------------
+// 2. [NUEVO] GESTIÓN DE PREGUNTAS DINÁMICAS
+// -----------------------------------------------------
+// El administrador podrá definir encuestas.
+
+model Pregunta_Dinamica {
+  id           String   @id @default(cuid())
+  texto        String   // Ej: "¿Quién merece ser el empleado del mes?" o "Buzón de Sugerencias"
+  tipo         String   // "EMPLEADO" (seleccionar compañero), "TEXTO" (string libre)
+  activa       Boolean  @default(true)
+  orden        Int      @default(0) // Control de posición en la interfaz
+  creadoEn     DateTime @default(now())
+
+  respuestas   Respuesta_Anonima[]
+}
+
+// -----------------------------------------------------
+// 3. RESPUESTAS ANÓNIMAS (UNIFICADAS)
+// -----------------------------------------------------
+// Se graba la información de la respuesta desconectada del autor.
+
+model Respuesta_Anonima {
+  id               String   @id @default(cuid())
+  fechaRegistro    DateTime @default(now())
+  mesVotado        String   // "2026-03" para filtrar resultados por mes
+
+  // Relación con la pregunta
+  preguntaId       String
+  pregunta         Pregunta_Dinamica @relation(fields: [preguntaId], references: [id], onDelete: Cascade)
+
+  // Opcional: Si la pregunta era de tipo "EMPLEADO", este campo guarda a quién votó
+  candidatoId      String?
+  candidato        Empleado_Candidato? @relation(fields: [candidatoId], references: [id], onDelete: SetNull)
+
+  // Opcional: Si la pregunta era de tipo "TEXTO", o para campos extra
+  respuestaTexto   String?
+}
+
+// -----------------------------------------------------
+// 4. [NUEVO] CONFIGURACIÓN GLOBAL (MARCA / BRANDING)
+// -----------------------------------------------------
+// Singleton table: Se asume que solo existirá 1 fila con ID 'global'
+
+model Configuracion_Plataforma {
+  id              String   @id @default("global")
+  logoBase64      String?  // Guarda la cadena codificada de la imagen
+  fechaModificado DateTime @default(now())
+}
