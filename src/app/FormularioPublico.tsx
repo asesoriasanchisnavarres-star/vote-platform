@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useFormState, useFormStatus } from "react-dom";
 import { registrarEncuesta } from "@/app/actions/encuesta";
@@ -13,7 +13,7 @@ function SubmitButton({ isReady }: { isReady: boolean }) {
         disabled={pending || !isReady}
         className={`w-full btn-primary text-xl py-5 shadow-2xl shadow-blue-600/20 ${(pending || !isReady) ? "opacity-50 cursor-not-allowed" : ""}`}
       >
-        {pending ? "Encriptando y Enviando..." : "Enviar Formulario de Forma Anónima"}
+        {pending ? "Enviando..." : "Enviar Formulario"}
       </button>
       <p className="text-center text-xs text-gray-400 mt-4">Al enviar, tu participación quedará cerrada para el mes en curso.</p>
     </div>
@@ -23,12 +23,11 @@ function SubmitButton({ isReady }: { isReady: boolean }) {
 export default function FormularioPublico({ preguntas, candidatos, mesVotado }: { preguntas: any[], candidatos: any[], mesVotado: string }) {
   const [state, formAction] = useFormState(registrarEncuesta, { error: "", success: false });
 
-  // Como es reload de server tras el set-cookie, si fuese estático fallaría el success state asincrono antes del pageload
   if (state?.success) {
     return (
       <div className="text-center py-10">
         <div className="mx-auto w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-gray-500 font-medium animate-pulse">Cifrando participación y procesando...</p>
+        <p className="text-gray-500 font-medium animate-pulse">Registrando tu participación...</p>
       </div>
     );
   }
@@ -90,7 +89,7 @@ export default function FormularioPublico({ preguntas, candidatos, mesVotado }: 
         </div>
       )}
 
-      {/* Solo permitir envío si hay opciones disponibles para votar (si aplica) */}
+      {/* Solo permitir envío si hay opciones disponibles para votar */}
       <SubmitButton isReady={preguntas.length > 0} />
     </form>
   );

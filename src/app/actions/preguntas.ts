@@ -31,6 +31,29 @@ export async function agregarPregunta(formData: FormData) {
   }
 }
 
+export async function editarPregunta(id: string, texto: string, tipo: string) {
+  try {
+    if (!texto || texto.trim().length < 3) {
+      return { error: "El texto de la pregunta debe tener al menos 3 caracteres." };
+    }
+
+    await prisma.pregunta_Dinamica.update({
+      where: { id },
+      data: {
+        texto: texto.trim(),
+        tipo: tipo,
+      },
+    });
+
+    revalidatePath("/admin/preguntas");
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: "Error al actualizar la pregunta." };
+  }
+}
+
 export async function alternarEstadoPregunta(id: string, estadoActual: boolean) {
   try {
     await prisma.pregunta_Dinamica.update({
