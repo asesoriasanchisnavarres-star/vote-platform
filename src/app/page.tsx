@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const mesActual = new Date().toISOString().slice(0, 7); // Ej: "2026-09"
   
-  // 1. Verificar si el usuario ya votó este mes bloqueando por cookie
+  // 1. Verificar si el usuario ya participó este mes bloqueando por cookie
   const cookieName = `voto_${mesActual}`;
   const yaVotoThisMonth = cookies().get(cookieName)?.value === "registrado";
 
@@ -40,7 +40,7 @@ export default async function Home() {
             Empleado del Mes
           </h1>
           <p className="text-[var(--text-secondary)] mt-3 max-w-lg mx-auto text-lg leading-relaxed">
-            Completa esta encuesta anónima para dejar constancia de tus sugerencias o nominaciones de este mes.
+            Completa esta encuesta para dejar constancia de tus sugerencias y nominaciones de este mes.
           </p>
         </div>
 
@@ -53,7 +53,7 @@ export default async function Home() {
               ¡Gracias por tu participación!
             </h2>
             <p className="text-[var(--text-secondary)]">
-              Ya hemos registrado tus respuestas de forma anónima para este mes en curso. Vuelve el mes siguiente para una nueva encuesta.
+              Tus respuestas ya han sido registradas para este mes en curso. Vuelve el próximo mes para una nueva edición.
             </p>
           </div>
         ) : (

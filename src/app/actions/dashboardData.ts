@@ -1,11 +1,15 @@
-"use server";
+﻿"use server";
 
 import prisma from "@/lib/prisma";
 
 export async function obtenerResumenDashboard(mesFiltro: string) {
   try {
+    const totalEmpleadosCenso = await prisma.empleado_Candidato.count({
+      where: { activo: true }
+    });
+
     const preguntas = await prisma.pregunta_Dinamica.findMany({
-      orderBy: { orden: 'asc' },
+      orderBy: { orden: "asc" },
       include: {
         respuestas: {
           where: { mesVotado: mesFiltro },
@@ -14,7 +18,10 @@ export async function obtenerResumenDashboard(mesFiltro: string) {
       }
     });
 
-    const resumen = preguntas.map(pregunta => {
+    let totalVotosNominaciones = 0;
+    let totalComentariosTexto = 0;
+
+    const resumen = preguntas.map((pregunta) => {
       if (pregunta.tipo === "EMPLEADO") {
         // Agrupar votos
         const conteo = pregunta.respuestas.reduce((acc: any, r) => {
@@ -22,34 +29,53 @@ export async function obtenerResumenDashboard(mesFiltro: string) {
           const key = r.candidato.nombreCompleto;
           if (!acc[key]) acc[key] = { votos: 0, departamento: r.candidato.departamento };
           acc[key].votos += 1;
+          totalVotosNominaciones += 1;
           return acc;
         }, {});
 
         // Convertir a array ordenado
-        const ranking = Object.keys(conteo).map(k => ({
-          empleado: k,
-          votos: conteo[k].votos,
-          departamento: conteo[k].departamento
-        })).sort((a, b) => b.votos - a.votos);
+        const ranking = Object.keys(conteo)
+          .map((k) => ({
+            empleado: k,
+            votos: conteo[k].votos,
+            departamento: conteo[k].departamento
+          }))
+          .sort((a, b) => b.votos - a.votos);
 
-        return { id: pregunta.id, texto: pregunta.texto, tipo: pregunta.tipo, data: ranking };
-      } 
-      else {
-        // Respuestas de texto bruto
+        return { id: pregunta.id, texto: pregunta.texto, tipo: pregunta.tipo, data: ranking, totalRespuestas: pregunta.respuestas.length };
+      } else {
+        // Respuestas de texto
         const textos = pregunta.respuestas
-          .filter(r => r.respuestaTexto)
+          .filter((r) => r.respuestaTexto)
           .sort((a, b) => b.fechaRegistro.getTime() - a.fechaRegistro.getTime())
-          .map(r => ({
+          .map((r) => ({
             fecha: r.fechaRegistro.toISOString(),
             texto: r.respuestaTexto
           }));
-        
-        return { id: pregunta.id, texto: pregunta.texto, tipo: pregunta.tipo, data: textos };
+
+        totalComentariosTexto += textos.length;
+        return { id: pregunta.id, texto: pregunta.texto, tipo: pregunta.tipo, data: textos, totalRespuestas: textos.length };
       }
     });
 
-    return { success: true, resumen };
+    // Métricas globales del mes
+    const maxRespuestasPorPregunta = preguntas.length > 0 
+      ? Math.max(...preguntas.map((p) => p.respuestas.length), 0)
+      : 0;
+
+    const estadisticas = {
+      totalEmpleadosCenso,
+      participacionesEstimadas: maxRespuestasPorPregunta,
+      porcentajeParticipacion: totalEmpleadosCenso > 0 
+        ? Math.min(Math.round((maxRespuestasPorPregunta / totalEmpleadosCenso) * 100), 100)
+        : 0,
+      totalComentariosTexto,
+      totalNominaciones: totalVotosNominaciones
+    };
+
+    return { success: true, resumen, estadisticas };
   } catch (error) {
+    console.error(error);
     return { error: "Error al cargar los resultados del servidor." };
   }
 }
@@ -57,6 +83,7 @@ export async function obtenerResumenDashboard(mesFiltro: string) {
 export async function exportarDatosCSV(mesFiltro: string) {
   try {
     const preguntas = await prisma.pregunta_Dinamica.findMany({
+      orderBy: { orden: "asc" },
       include: {
         respuestas: {
           where: { mesVotado: mesFiltro },
@@ -65,20 +92,19 @@ export async function exportarDatosCSV(mesFiltro: string) {
       }
     });
 
-    // Formatear todo en un solo CSV consolidado
     let csvData = "Fecha,Pregunta Tipo,Pregunta Texto,Respuesta (Candidato / Texto)\n";
 
-    preguntas.forEach(p => {
-      p.respuestas.forEach(r => {
+    preguntas.forEach((p) => {
+      p.respuestas.forEach((r) => {
         const fecha = r.fechaRegistro.toISOString().split("T")[0];
         const tipo = p.tipo;
-        const textoPregunta = `"${p.texto.replace(/"/g, '""')}"`;
+        const textoPregunta = `"${p.texto.replace(/"/g, "\"\"")}"`;
         
         let respuestaStr = "";
         if (tipo === "EMPLEADO" && r.candidato) {
-          respuestaStr = `"${r.candidato.nombreCompleto} (${r.candidato.departamento || '-'})"`;
+          respuestaStr = `"${r.candidato.nombreCompleto} (${r.candidato.departamento || "-"})"`;
         } else if (tipo === "TEXTO" && r.respuestaTexto) {
-          respuestaStr = `"${r.respuestaTexto.replace(/"/g, '""')}"`;
+          respuestaStr = `"${r.respuestaTexto.replace(/"/g, "\"\"")}"`;
         }
 
         csvData += `${fecha},${tipo},${textoPregunta},${respuestaStr}\n`;
@@ -91,7 +117,6 @@ export async function exportarDatosCSV(mesFiltro: string) {
         consolidado: csvData 
       } 
     };
-
   } catch (error) {
     return { error: "Fallo la construcción del CSV." };
   }
@@ -111,16 +136,16 @@ export async function exportarDatosCSVIndividual(mesFiltro: string, preguntaId: 
 
     if (!pregunta) return { error: "Pregunta no encontrada." };
 
-    let csvData = `Fecha,Pregunta,"${pregunta.texto.replace(/"/g, '""')}"\n`;
+    let csvData = `Fecha,Pregunta,"${pregunta.texto.replace(/"/g, "\"\"")}"\n`;
 
-    pregunta.respuestas.forEach(r => {
+    pregunta.respuestas.forEach((r) => {
       const fecha = r.fechaRegistro.toISOString().split("T")[0];
       let respuestaStr = "";
       
       if (pregunta.tipo === "EMPLEADO" && r.candidato) {
-        respuestaStr = `"${r.candidato.nombreCompleto} (${r.candidato.departamento || '-'})"`;
+        respuestaStr = `"${r.candidato.nombreCompleto} (${r.candidato.departamento || "-"})"`;
       } else if (pregunta.tipo === "TEXTO" && r.respuestaTexto) {
-        respuestaStr = `"${r.respuestaTexto.replace(/"/g, '""')}"`;
+        respuestaStr = `"${r.respuestaTexto.replace(/"/g, "\"\"")}"`;
       }
 
       csvData += `${fecha},${pregunta.tipo},${respuestaStr}\n`;
@@ -137,9 +162,7 @@ export async function exportarDatosCSVIndividual(mesFiltro: string, preguntaId: 
 
 export async function purgarResultadosPrueba() {
   try {
-    // Borrado definitivo de TODA la tabla de respuestas (reset total de votos/sugerencias)
     const result = await prisma.respuesta_Anonima.deleteMany({});
-    
     return { 
       success: true, 
       mensaje: `Se han eliminado permanentemente ${result.count} respuestas de la base de datos.` 

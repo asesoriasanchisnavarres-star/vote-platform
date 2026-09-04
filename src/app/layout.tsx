@@ -1,16 +1,16 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Work_Sans } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 
 const workSans = Work_Sans({ 
   subsets: ["latin"],
-  variable: '--font-work-sans',
+  variable: "--font-work-sans",
 });
 
 export const metadata: Metadata = {
   title: "Plataforma Interna | Encuestas y Votaciones",
-  description: "Buzón y Sistema de Votación confidencial para empleados.",
+  description: "Buzón y Sistema de Votación para el equipo de Sanchis Asesores.",
 };
 
 export default function RootLayout({
@@ -25,9 +25,9 @@ export default function RootLayout({
           {children}
         </div>
         
-        {/* Footer simple global con el enlace "Stealth" al admin escondido en el símbolo del Copyright */}
+        {/* Footer simple global */}
         <footer className="py-6 text-center text-sm text-[var(--text-secondary)]">
-          <p>Plataforma Confidencial de Empleados. Las respuestas son de carácter anónimo.</p>
+          <p>Plataforma interna del equipo de Sanchis Asesores.</p>
           <p className="mt-1">
             <Link href="/admin/login" className="cursor-default select-none group" title="Acceso Exclusivo">
               <span className="group-hover:text-[var(--brand-accent)] transition-colors">©</span>
